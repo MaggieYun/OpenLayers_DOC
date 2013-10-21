@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>自定义 TOOL 类型 Control</title>
+    <script src="http://172.16.60.32/OpenLayers-2.12/OpenLayers.js"></script>
+    <script src="http://172.16.60.32/OpenLayers-2.12/ex/GMapLayer.js"></script>
+    <script src="http://172.16.60.32/OpenLayers-2.12/jquery.js"></script>
+    <style>
+        html,body{
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #mapDiv{
+            width: 640px;
+            height: 480px;
+        }
+        
+        .olGetCdtItemActive{
+            background: #ff0000;
+            border: solid 1px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+        }
+
+        .olGetCdtItemInactive{
+            background: #00ff00;
+            border: solid 1px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+        }
+
+        .olControlZoomBoxItemInactive{
+            background: #00ffff;
+            border: solid 1px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+        }
+
+        .olControlZoomBoxItemActive{
+            background: #ffff00;
+            border: solid 1px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+        }
+    </style>
+    <script>
+        $(function(){
+            /**
+             * 调用该函数返回用于点击地图获取坐标的 Control
+             * @param {Function} callback 回调函数
+             * @return {OpenLayers.Control.Button}
+             */
+            var GetCdt = function(callback){
+                var onMapClickHandler = function(evt){
+                    if(typeof callback === 'function'){
+                        var lonLat = this.getLonLatFromPixel({
+                            x:evt.clientX,
+                            y:evt.clientY
+                        })
+                        callback.call(null,lonLat);
+                    }
+                };
+
+                //Control 激活时 注册地图点击事件
+                var activate = function(){
+                    /*map 的引用通过 Control 获取，Control 上 map 的引用在 Control 
+                      添加到 map 时被设置*/
+                    var map = ctl.map;
+                    map.events.register('click',map,onMapClickHandler);
+                };
+
+                //Control 无效时 删除地图点击事件注册
+                var deactivate = function(){
+                    var map = ctl.map;
+                    map.events.unregister('click',map,onMapClickHandler);
+                };
+
+                var ctl = new OpenLayers.Control.Button({
+                    displayClass:'olGetCdt',
+                    type: OpenLayers.Control.TYPE_TOOL,
+                    eventListeners: {
+                        'activate':activate,
+                        'deactivate':deactivate
+                    }
+                });
+
+                //返回实例化后的 OpenLayers.Control.Button
+                return ctl;
+            };
+
+            //定义地图对象，指定地图容器
+            var map = new OpenLayers.Map('mapDiv');
+            
+            //定义底图
+            var layer = new OpenLayers.Layer.GMapLayer('Google Street Map',
+                        ['http://mt1.google.cn/vt/lyrs=m@205000000']);
+            
+            //向地图添加图层
+            map.addLayer(layer);
+            
+            //定义控件栏
+            var panel = new OpenLayers.Control.Panel({});
+            
+            
+            //定义取点Control回调
+            var callback = function(lonLat){
+                alert(lonLat.lon + ',' + lonLat.lat);
+            };
+            //通过方法GetCdt，获取取点Cotrol
+            var ctl = GetCdt(callback);
+
+            //添加btn，注意是 addControls 而不是 addControl
+            panel.addControls([ctl,new OpenLayers.Control.ZoomBox()]);
+            
+            //将控件栏添加到地图
+            map.addControl(panel);
+
+            panel.moveTo(new OpenLayers.Pixel(200,200));
+
+            map.zoomToMaxExtent();
+
+        });
+    </script>
+</head>
+<body>
+    <div id="mapDiv"></div>
+</body>
+</html>
